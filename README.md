@@ -1,2 +1,0 @@
-# Safuu
-Safuu Protocol
