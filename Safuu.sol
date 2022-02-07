@@ -1,4 +1,3 @@
-
 pragma solidity ^0.7.4;
 
 library SafeMathInt {
@@ -347,6 +346,7 @@ contract Safuu is ERC20Detailed, Ownable {
     address public TreasuryReceiver;
     address public SafuuInsuranceFundReceiver;
     address public FirePit;
+    address public presaleAddress;
 
     uint256 targetLiquidity = 50;
     uint256 targetLiquidityDenominator = 100;
@@ -366,20 +366,23 @@ contract Safuu is ERC20Detailed, Ownable {
     uint256 private constant TOTAL_GONS =
         MAX_UINT256 - (MAX_UINT256 % INITIAL_FRAGMENTS_SUPPLY);
 
-    uint256 private constant MAX_SUPPLY = ~uint128(0);
+    uint256 private constant MAX_SUPPLY = 125 * 10**7 * 10**DECIMALS;
 
     bool private _autoRebase;
     uint256 private _initRebaseStartTime;
     uint256 private _lastRebasedTime;
     uint256 private _totalSupply;
     uint256 private _gonsPerFragment;
+
+
+    mapping(address => bool) private _excludeFromFee;
     mapping(address => uint256) private _gonBalances;
 
     mapping(address => mapping(address => uint256)) private _allowedFragments;
     mapping(address => bool) public blacklist;
 
     constructor() ERC20Detailed("Safuu", "SAFUU", uint8(DECIMALS)) {
-        router = IDEXRouter(0x10ED43C718714eb63d5aA57B78B54704E256024E); //Sushi 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506 // Cake 0x10ED43C718714eb63d5aA57B78B54704E256024E
+        router = IDEXRouter(0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3); //Sushi 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506 // Cake 0x10ED43C718714eb63d5aA57B78B54704E256024E
 
         pair = IDEXFactory(router.factory()).createPair(
             router.WETH(),
@@ -387,7 +390,7 @@ contract Safuu is ERC20Detailed, Ownable {
         );
 
         autoLiquidityReceiver = 0x47d16118BE8890B260a0cb00dA5DEf5669D33577;
-        TreasuryReceiver = 0xdb24AC44855AEEDbfcC751205CADF8ff64346BfF;
+        TreasuryReceiver = 0x9CC284FdfA70C713B56E4E1805FEA0bd6e8680d1;
         SafuuInsuranceFundReceiver = 0xa5C42c84134cc26090f9d16705F06B8f95D7eC42;
         FirePit = 0xa01CC7f44533990C218cf56EaC829AeA4a699444;
 
@@ -485,7 +488,7 @@ contract Safuu is ERC20Detailed, Ownable {
         initialDistributionLock
         returns (bool)
     {
-        if(_autoRebase)
+        if(_autoRebase && (_totalSupply < MAX_SUPPLY))
             if( block.timestamp >= _lastRebasedTime + 15 minutes){
                 uint256 deltaTime = block.timestamp - _lastRebasedTime;
                 uint256 epoch = deltaTime - deltaTime % 15 minutes;
@@ -548,6 +551,7 @@ contract Safuu is ERC20Detailed, Ownable {
         uint256 gonAmountReceived = shouldTakeFee(sender, recipient)
             ? takeFee(sender, recipient, gonAmount)
             : gonAmount;
+
         _gonBalances[recipient] = _gonBalances[recipient].add(
             gonAmountReceived
         );
@@ -737,14 +741,6 @@ contract Safuu is ERC20Detailed, Ownable {
         return !inSwap;
     }
 
-    function sendPresale(address[] calldata recipients, uint256[] calldata values)
-        external
-        onlyOwner
-    {
-      for (uint256 i = 0; i < recipients.length; i++) {
-        _transferFrom(msg.sender, recipients[i], values[i]);
-      }
-    }
 
     function checkSwapThreshold() external view returns (uint256) {
         return gonSwapThreshold.div(_gonsPerFragment);
@@ -789,6 +785,11 @@ contract Safuu is ERC20Detailed, Ownable {
         returns (bool)
     {
         return getLiquidityBacking(accuracy) > target;
+    }
+    
+    function whitelistPinkSale(address _presaleAddress) external onlyOwner {
+        presaleAddress = _presaleAddress;
+        _isFeeExempt[_presaleAddress] = true;
     }
 
     receive() external payable {}
