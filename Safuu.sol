@@ -385,7 +385,7 @@ contract Safuu is ERC20Detailed, Ownable {
     mapping(address => bool) public blacklist;
 
     constructor() ERC20Detailed("Safuu", "SAFUU", uint8(DECIMALS)) {
-        router = IDEXRouter(0x10ED43C718714eb63d5aA57B78B54704E256024E);
+        router = IDEXRouter(0x10ED43C718714eb63d5aA57B78B54704E256024E); //Sushi 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506 // Cake 0x10ED43C718714eb63d5aA57B78B54704E256024E
 
         pair = IDEXFactory(router.factory()).createPair(
             router.WETH(),
@@ -393,10 +393,10 @@ contract Safuu is ERC20Detailed, Ownable {
         );
 
         pairAddress = pair;
-        autoLiquidityReceiver = 0x47d16118BE8890B260a0cb00dA5DEf5669D33577;
-        TreasuryReceiver = 0xdb24AC44855AEEDbfcC751205CADF8ff64346BfF;
-        SafuuInsuranceFundReceiver = 0xa5C42c84134cc26090f9d16705F06B8f95D7eC42;
-        FirePit = 0xa01CC7f44533990C218cf56EaC829AeA4a699444;
+        autoLiquidityReceiver = 0x5562640B953b6c2f79a655E930aFa68b2a65C627
+        TreasuryReceiver = 0xa9c6d0cc785569b450393A69599E97fAED5D9dd9
+        SafuuInsuranceFundReceiver = 0x082D0FbCA3D80b2d4A05E20bFc227523bE8EFEF3
+        FirePit = 0xaA32C984AfDfa6B95e88B8aB7faBfa65De89b98C
 
         _allowedFragments[address(this)][address(router)] = uint256(-1);
         pairContract = InterfaceLP(pair);
