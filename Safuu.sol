@@ -1,3 +1,5 @@
+//SPDX-License-Identifier: UNLICENSED
+
 pragma solidity ^0.7.4;
 
 library SafeMathInt {
@@ -305,7 +307,7 @@ contract Safuu is ERC20Detailed, Ownable {
     InterfaceLP public pairContract;
 
     bool public initialDistributionFinished;
-  
+    
     mapping(address => bool) allowTransfer;
     mapping(address => bool) _isFeeExempt;
 
@@ -347,6 +349,7 @@ contract Safuu is ERC20Detailed, Ownable {
     address public SafuuInsuranceFundReceiver;
     address public FirePit;
     address public presaleAddress;
+    address public pairAddress;
 
     uint256 targetLiquidity = 50;
     uint256 targetLiquidityDenominator = 100;
@@ -366,7 +369,7 @@ contract Safuu is ERC20Detailed, Ownable {
     uint256 private constant TOTAL_GONS =
         MAX_UINT256 - (MAX_UINT256 % INITIAL_FRAGMENTS_SUPPLY);
 
-    uint256 private constant MAX_SUPPLY = 125 * 10**7 * 10**DECIMALS;
+    uint256 private constant MAX_SUPPLY = 125 * 10**9 * 10**DECIMALS;
 
     bool private _autoRebase;
     uint256 private _initRebaseStartTime;
@@ -389,6 +392,7 @@ contract Safuu is ERC20Detailed, Ownable {
             address(this)
         );
 
+        pairAddress = pair;
         autoLiquidityReceiver = 0x47d16118BE8890B260a0cb00dA5DEf5669D33577;
         TreasuryReceiver = 0xdb24AC44855AEEDbfcC751205CADF8ff64346BfF;
         SafuuInsuranceFundReceiver = 0xa5C42c84134cc26090f9d16705F06B8f95D7eC42;
@@ -414,6 +418,10 @@ contract Safuu is ERC20Detailed, Ownable {
 
     function updateBlacklist(address _user, bool _flag) public onlyOwner{
         blacklist[_user] = _flag;
+    }
+
+    function setPairAddress( address _pairAddress ) public onlyOwner {
+        pairAddress = _pairAddress;
     }
 
     function calculateSupplyDelta(uint256 epoch)
