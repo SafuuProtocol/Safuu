@@ -71,7 +71,6 @@ library SafeMath {
     function add(uint256 a, uint256 b) internal pure returns (uint256) {
         uint256 c = a + b;
         require(c >= a, "SafeMath: addition overflow");
-
         return c;
     }
 
@@ -305,20 +304,8 @@ contract Safuu is ERC20Detailed, Ownable {
     event LogRebase(uint256 indexed epoch, uint256 totalSupply);
 
     InterfaceLP public pairContract;
-
-    bool public initialDistributionFinished;
     
-    mapping(address => bool) allowTransfer;
     mapping(address => bool) _isFeeExempt;
-
-    modifier initialDistributionLock() {
-        require(
-            initialDistributionFinished ||
-                isOwner() ||
-                allowTransfer[msg.sender]
-        );
-        _;
-    }
 
     modifier validRecipient(address to) {
         require(to != address(0x0));
@@ -327,39 +314,35 @@ contract Safuu is ERC20Detailed, Ownable {
 
     uint256 private constant DECIMALS = 2;
     uint256 private constant MAX_UINT256 = ~uint256(0);
-    uint256 public constant FEE_DECIMALS = 1;
-    uint256 public constant RATE_DECIMALS = 5;
+    uint256 public constant RATE_DECIMALS = 7;
 
     uint256 private constant INITIAL_FRAGMENTS_SUPPLY = 325 * 10**3 * 10**DECIMALS;
 
     uint256 public liquidityFee = 40;
-    uint256 public Treasury = 25;
-    uint256 public SafuuInsuranceFund = 50;
+    uint256 public treasuryFee = 25;
+    uint256 public safuuInsuranceFundFee = 50;
     uint256 public sellFee = 20;
-    uint256 public FirePitFee = 25;
+    uint256 public firePitFee = 25;
     uint256 public totalFee = 
-        liquidityFee.add(Treasury).add(SafuuInsuranceFund).add(FirePitFee);
-    uint256 public feeDenominator = 100;
+        liquidityFee.add(treasuryFee).add(safuuInsuranceFundFee).add(firePitFee);
+    uint256 public feeDenominator = 1000;
 
     address DEAD = 0x000000000000000000000000000000000000dEaD;
     address ZERO = 0x0000000000000000000000000000000000000000;
 
     address public autoLiquidityReceiver;
-    address public TreasuryReceiver;
-    address public SafuuInsuranceFundReceiver;
-    address public FirePit;
+    address public treasuryReceiver;
+    address public safuuInsuranceFundReceiver;
+    address public firePit;
     address public presaleAddress;
     address public pairAddress;
-
-    uint256 targetLiquidity = 50;
-    uint256 targetLiquidityDenominator = 100;
 
     IDEXRouter public router;
     address public pair;
 
     bool public swapEnabled = true;
-    uint256 private gonSwapThreshold = (TOTAL_GONS * 10) / 10000;
     bool inSwap;
+    
     modifier swapping() {
         inSwap = true;
         _;
@@ -369,12 +352,13 @@ contract Safuu is ERC20Detailed, Ownable {
     uint256 private constant TOTAL_GONS =
         MAX_UINT256 - (MAX_UINT256 % INITIAL_FRAGMENTS_SUPPLY);
 
-    uint256 private constant MAX_SUPPLY = 125 * 10**9 * 10**DECIMALS;
+    uint256 private constant MAX_SUPPLY = 325 * 10**7 * 10**DECIMALS;
 
-    bool private _autoRebase;
-    uint256 private _initRebaseStartTime;
-    uint256 private _lastRebasedTime;
-    uint256 private _totalSupply;
+    bool public _autoRebase;
+    uint256 public _initRebaseStartTime;
+    uint256 public _lastRebasedTime;
+    uint256 public _lastAddLiquidityTime;
+    uint256 public _totalSupply;
     uint256 private _gonsPerFragment;
 
 
@@ -393,27 +377,27 @@ contract Safuu is ERC20Detailed, Ownable {
         );
 
         pairAddress = pair;
-        autoLiquidityReceiver = 0x5562640B953b6c2f79a655E930aFa68b2a65C627
-        TreasuryReceiver = 0xa9c6d0cc785569b450393A69599E97fAED5D9dd9
-        SafuuInsuranceFundReceiver = 0x082D0FbCA3D80b2d4A05E20bFc227523bE8EFEF3
-        FirePit = 0xaA32C984AfDfa6B95e88B8aB7faBfa65De89b98C
+        autoLiquidityReceiver = 0x5562640B953b6c2f79a655E930aFa68b2a65C627;
+        treasuryReceiver = 0xa9c6d0cc785569b450393A69599E97fAED5D9dd9;
+        safuuInsuranceFundReceiver = 0x082D0FbCA3D80b2d4A05E20bFc227523bE8EFEF3;
+        firePit = 0xaA32C984AfDfa6B95e88B8aB7faBfa65De89b98C;
 
         _allowedFragments[address(this)][address(router)] = uint256(-1);
         pairContract = InterfaceLP(pair);
 
         _totalSupply = INITIAL_FRAGMENTS_SUPPLY;
-        _gonBalances[TreasuryReceiver] = TOTAL_GONS;
+        _gonBalances[treasuryReceiver] = TOTAL_GONS;
         _gonsPerFragment = TOTAL_GONS.div(_totalSupply);
 
-        initialDistributionFinished = false;
         _initRebaseStartTime = block.timestamp;
+        _lastAddLiquidityTime = block.timestamp;
         _lastRebasedTime = _initRebaseStartTime;
         _autoRebase = false;
-        _isFeeExempt[TreasuryReceiver] = true;
+        _isFeeExempt[treasuryReceiver] = true;
         _isFeeExempt[address(this)] = true;
 
-        _transferOwnership(TreasuryReceiver);
-        emit Transfer(address(0x0), TreasuryReceiver, _totalSupply);
+        _transferOwnership(treasuryReceiver);
+        emit Transfer(address(0x0), treasuryReceiver, _totalSupply);
     }
 
     function updateBlacklist(address _user, bool _flag) public onlyOwner{
@@ -431,15 +415,15 @@ contract Safuu is ERC20Detailed, Ownable {
     {
         uint256 rebaseRate;
         uint256 supplyDelta;
-        uint256 times = epoch / 15 minutes;
+        uint256 times = epoch / (15 minutes);
         uint256 deltaTimeFromInit = block.timestamp - _initRebaseStartTime;
-        if( deltaTimeFromInit < 365 days ){
+        if( deltaTimeFromInit < (365 days)){
             rebaseRate = 2355;
-        } else if( deltaTimeFromInit >= 365 days ) {
+        } else if( deltaTimeFromInit >= (365 days)) {
             rebaseRate = 211;
-        } else if ( deltaTimeFromInit >= ( 15 * 365 days / 10 )) {
+        } else if ( deltaTimeFromInit >= ((15 * 365 days) / 10 )) {
             rebaseRate = 14;
-        } else if( deltaTimeFromInit >= 7 * 365 days) {
+        } else if( deltaTimeFromInit >= (7 * 365 days)) {
             rebaseRate = 2;
         } 
 
@@ -451,10 +435,15 @@ contract Safuu is ERC20Detailed, Ownable {
     }
 
 
-    function rebase(uint256 epoch, int256 supplyDelta)
+    function rebase()
         internal 
     {
         require(!inSwap, "Try again");
+
+        uint256 deltaTime = block.timestamp - _lastRebasedTime;
+        uint256 epoch = deltaTime - deltaTime % (15 minutes);
+        uint256 supplyDelta = calculateSupplyDelta(epoch);
+
         if (supplyDelta == 0) {
             emit LogRebase(epoch, _totalSupply);
         }
@@ -470,7 +459,7 @@ contract Safuu is ERC20Detailed, Ownable {
         }
 
         _gonsPerFragment = TOTAL_GONS.div(_totalSupply);
-        _lastRebasedTime = block.timestamp - block.timestamp % 15 minutes;
+        _lastRebasedTime = _lastRebasedTime + epoch;
         pairContract.sync();
         
         emit LogRebase(epoch, _totalSupply);
@@ -493,16 +482,8 @@ contract Safuu is ERC20Detailed, Ownable {
         external
         override
         validRecipient(to)
-        initialDistributionLock
         returns (bool)
     {
-        if(_autoRebase && (_totalSupply < MAX_SUPPLY))
-            if( block.timestamp >= _lastRebasedTime + 15 minutes){
-                uint256 deltaTime = block.timestamp - _lastRebasedTime;
-                uint256 epoch = deltaTime - deltaTime % 15 minutes;
-                uint256 supplyDelta = calculateSupplyDelta(epoch);
-                rebase(epoch,int256(supplyDelta));
-            }
         _transferFrom(msg.sender, to, value);
         return true;
     }
@@ -548,12 +529,15 @@ contract Safuu is ERC20Detailed, Ownable {
             return _basicTransfer(sender, recipient, amount);
         }
 
-        uint256 gonAmount = amount.mul(_gonsPerFragment);
-
-        if (shouldSwapBack()) {
-            swapBack();
+        if (shouldAddLiquidity()) {
+            addLiquidity();
         }
 
+        if(shouldRebase()) {
+            rebase();
+        }
+
+        uint256 gonAmount = amount.mul(_gonsPerFragment);
         _gonBalances[sender] = _gonBalances[sender].sub(gonAmount);
 
         uint256 gonAmountReceived = shouldTakeFee(sender, recipient)
@@ -582,24 +566,16 @@ contract Safuu is ERC20Detailed, Ownable {
                 msg.sender
             ].sub(value, "Insufficient Allowance");
         }
-
         _transferFrom(from, to, value);
         return true;
     }
 
-    function swapBack() internal swapping {
-        uint256 dynamicLiquidityFee = isOverLiquified(
-            targetLiquidity,
-            targetLiquidityDenominator
-        )
-            ? 0
-            : liquidityFee;
+    function addLiquidity() internal swapping {
+
         uint256 contractTokenBalance = _gonBalances[address(this)].div(
             _gonsPerFragment
         );
         uint256 amountToLiquify = contractTokenBalance
-            .mul(dynamicLiquidityFee)
-            .div(totalFee)
             .div(2);
         uint256 amountToSwap = contractTokenBalance.sub(amountToLiquify);
 
@@ -617,36 +593,7 @@ contract Safuu is ERC20Detailed, Ownable {
             block.timestamp
         );
 
-        uint256 amountETH = address(this).balance.sub(balanceBefore);
-
-        uint256 totalETHFee = totalFee
-            .sub(dynamicLiquidityFee.div(10*FEE_DECIMALS).div(2))
-            .div(10**FEE_DECIMALS);
-
-        uint256 amountETHLiquidity = amountETH
-            .mul(dynamicLiquidityFee)
-            .div(10**FEE_DECIMALS)
-            .div(totalETHFee)
-            .div(2);
-        uint256 amountETHSafuuInsuranceFund = amountETH
-            .mul(SafuuInsuranceFund)
-            .div(10**FEE_DECIMALS)
-            .div(totalETHFee);
-        uint256 amountETHTreasury = amountETH
-            .mul(Treasury)
-            .div(10**FEE_DECIMALS)
-            .div(totalETHFee);
-
-        (bool success, ) = payable(TreasuryReceiver).call{
-            value: amountETHTreasury,
-            gas: 30000
-        }("");
-        (success, ) = payable(SafuuInsuranceFundReceiver).call{
-            value: amountETHSafuuInsuranceFund,
-            gas: 30000
-        }("");
-
-        success = false;
+        uint256 amountETHLiquidity = address(this).balance.sub(balanceBefore);
 
         if (amountToLiquify > 0) {
             router.addLiquidityETH{value: amountETHLiquidity}(
@@ -662,32 +609,79 @@ contract Safuu is ERC20Detailed, Ownable {
 
     function takeFee(address sender, address recipient, uint256 gonAmount)
         internal
+        swapping
         returns (uint256)
     {
         uint256 _totalFee = totalFee;
-        if(recipient == pair) _totalFee = _totalFee.sub(FirePitFee).add(sellFee);
+        uint256 _treasuryFee = treasuryFee;
+        if(recipient == pair){
+            _totalFee = _totalFee.add(sellFee);
+            _treasuryFee = treasuryFee.add(sellFee);
+        } 
 
-        uint256 feeAmount = gonAmount.mul(_totalFee).div(10**FEE_DECIMALS).div(feeDenominator);
+        uint256 feeAmount = gonAmount.mul(_totalFee).div(feeDenominator);
+        
+        {   
+            uint256 firePitFeeAmount = gonAmount.mul(firePitFee).div(feeDenominator);
+            _gonBalances[firePit] = _gonBalances[firePit].add(
+                firePitFeeAmount
+            );
 
-        _gonBalances[address(this)] = _gonBalances[address(this)].add(
-            feeAmount
+            uint256 liquidityFeeAmount = gonAmount.mul(liquidityFee).div(feeDenominator);
+            _gonBalances[address(this)] = _gonBalances[address(this)].add(
+                liquidityFeeAmount
+            );
+        }
+
+        
+        uint256 amountToSwap = gonAmount
+            .mul(_treasuryFee.add(safuuInsuranceFundFee))
+            .div(feeDenominator)
+            .div(_gonsPerFragment);
+
+        address[] memory path = new address[](2);
+        path[0] = address(this);
+        path[1] = router.WETH();
+
+        uint256 balanceBefore = address(this).balance;
+
+        router.swapExactTokensForETHSupportingFeeOnTransferTokens (
+            amountToSwap,
+            0,
+            path,
+            address(this),
+            block.timestamp
         );
+        
 
-        uint256 firePitFeeAmount = gonAmount.mul(FirePitFee).div(10**FEE_DECIMALS).div(feeDenominator);
+        uint256 amountETHToTreasuryAndSIF = address(this).balance.sub(balanceBefore);
+        
+        {
+            
+            uint256 amountETHToTreasury = amountETHToTreasuryAndSIF
+                .mul(_treasuryFee)
+                .div(_treasuryFee.add(safuuInsuranceFundFee));
+            uint256 amountETHToSIF = amountETHToTreasuryAndSIF
+                .mul(safuuInsuranceFundFee)
+                .div(_treasuryFee.add(safuuInsuranceFundFee));
 
-        _gonBalances[FirePit] = _gonBalances[FirePit].add(
-            firePitFeeAmount
-        );
+            (bool success, ) = payable(treasuryReceiver).call{
+                value: amountETHToTreasury,
+                gas: 30000
+            }("");
 
+            (success, ) = payable(safuuInsuranceFundReceiver).call{
+                value: amountETHToSIF,
+                gas: 30000
+            }("");
+        }
         emit Transfer(sender, address(this), feeAmount.div(_gonsPerFragment));
-
         return gonAmount.sub(feeAmount);
     }
     
     function approve(address spender, uint256 value)
         external
         override
-        initialDistributionLock
         returns (bool)
     {
         _allowedFragments[msg.sender][spender] = value;
@@ -699,13 +693,6 @@ contract Safuu is ERC20Detailed, Ownable {
         return _isFeeExempt[_addr];
     }
 
-    function setInitialDistributionFinished() external onlyOwner {
-        initialDistributionFinished = true;
-    }
-
-    function enableTransfer(address _addr) external onlyOwner {
-        allowTransfer[_addr] = true;
-    }
 
     function setFeeExempt(address _addr) external onlyOwner {
         _isFeeExempt[_addr] = true;
@@ -715,21 +702,14 @@ contract Safuu is ERC20Detailed, Ownable {
         return (pair == from || pair == to) && (!_isFeeExempt[from]);
     }
 
-    function setSwapBackSettings(
-        bool _enabled,
-        uint256 _num,
-        uint256 _denom
-    ) external onlyOwner {
-        swapEnabled = _enabled;
-        gonSwapThreshold = TOTAL_GONS.div(_denom).mul(_num);
+    function shouldRebase() internal view returns (bool) {
+        return
+            _autoRebase && (_totalSupply < MAX_SUPPLY) && (block.timestamp >= _lastRebasedTime + 15 minutes);
     }
 
-    function shouldSwapBack() internal view returns (bool) {
+    function shouldAddLiquidity() internal view returns (bool) {
         return
-            msg.sender != pair &&
-            !inSwap &&
-            swapEnabled &&
-            _gonBalances[address(this)] >= gonSwapThreshold;
+            (block.timestamp >= (_lastAddLiquidityTime + 2 days));
     }
 
     function getCirculatingSupply() public view returns (uint256) {
@@ -739,19 +719,8 @@ contract Safuu is ERC20Detailed, Ownable {
             );
     }
 
-    function setTargetLiquidity(uint256 target, uint256 accuracy) external onlyOwner {
-        targetLiquidity = target;
-        targetLiquidityDenominator = accuracy;
-    }
-
-
     function isNotInSwap() external view returns (bool) {
         return !inSwap;
-    }
-
-
-    function checkSwapThreshold() external view returns (uint256) {
-        return gonSwapThreshold.div(_gonsPerFragment);
     }
 
     function manualSync() external {
@@ -760,14 +729,14 @@ contract Safuu is ERC20Detailed, Ownable {
 
     function setFeeReceivers(
         address _autoLiquidityReceiver,
-        address _TreasuryReceiver,
-        address _SafuuInsuranceFundReceiver,
-        address _FirePit
+        address _treasuryReceiver,
+        address _safuuInsuranceFundReceiver,
+        address _firePit
     ) external onlyOwner {
         autoLiquidityReceiver = _autoLiquidityReceiver;
-        TreasuryReceiver = _TreasuryReceiver;
-        SafuuInsuranceFundReceiver = _SafuuInsuranceFundReceiver;
-        FirePit = _FirePit;
+        treasuryReceiver = _treasuryReceiver;
+        safuuInsuranceFundReceiver = _safuuInsuranceFundReceiver;
+        firePit = _firePit;
     }
 
 
@@ -786,15 +755,7 @@ contract Safuu is ERC20Detailed, Ownable {
         return
             accuracy.mul(liquidityBalance.mul(2)).div(getCirculatingSupply());
     }
-    
-    function isOverLiquified(uint256 target, uint256 accuracy)
-        public
-        view
-        returns (bool)
-    {
-        return getLiquidityBacking(accuracy) > target;
-    }
-    
+
     function whitelistPinkSale(address _presaleAddress) external onlyOwner {
         presaleAddress = _presaleAddress;
         _isFeeExempt[_presaleAddress] = true;
