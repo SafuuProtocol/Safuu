@@ -1,4 +1,6 @@
-//SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: Unlicensed
+//
+// SAFUU PROTOCOL COPYRIGHT (C) 2022 
 
 pragma solidity ^0.7.4;
 
@@ -38,39 +40,11 @@ library SafeMathInt {
     }
 }
 
-interface IERC20 {
-    function totalSupply() external view returns (uint256);
-
-    function balanceOf(address who) external view returns (uint256);
-
-    function allowance(address owner, address spender)
-        external
-        view
-        returns (uint256);
-
-    function transfer(address to, uint256 value) external returns (bool);
-
-    function approve(address spender, uint256 value) external returns (bool);
-
-    function transferFrom(
-        address from,
-        address to,
-        uint256 value
-    ) external returns (bool);
-
-    event Transfer(address indexed from, address indexed to, uint256 value);
-
-    event Approval(
-        address indexed owner,
-        address indexed spender,
-        uint256 value
-    );
-}
-
 library SafeMath {
     function add(uint256 a, uint256 b) internal pure returns (uint256) {
         uint256 c = a + b;
         require(c >= a, "SafeMath: addition overflow");
+
         return c;
     }
 
@@ -121,136 +95,232 @@ library SafeMath {
     }
 }
 
-interface InterfaceLP {
-    function sync() external;
-}
+interface IERC20 {
+    function totalSupply() external view returns (uint256);
 
-library Roles {
-    struct Role {
-        mapping (address => bool) bearer;
-    }
+    function balanceOf(address who) external view returns (uint256);
 
-    /**
-     * @dev Give an account access to this role.
-     */
-    function add(Role storage role, address account) internal {
-        require(!has(role, account), "Roles: account already has role");
-        role.bearer[account] = true;
-    }
-
-    /**
-     * @dev Remove an account's access to this role.
-     */
-    function remove(Role storage role, address account) internal {
-        require(has(role, account), "Roles: account does not have role");
-        role.bearer[account] = false;
-    }
-
-    /**
-     * @dev Check if an account has this role.
-     * @return bool
-     */
-    function has(Role storage role, address account) internal view returns (bool) {
-        require(account != address(0), "Roles: account is the zero address");
-        return role.bearer[account];
-    }
-}
-
-
-abstract contract ERC20Detailed is IERC20 {
-    string private _name;
-    string private _symbol;
-    uint8 private _decimals;
-
-    constructor(
-        string memory name_,
-        string memory symbol_,
-        uint8 decimals_
-    ) {
-        _name = name_;
-        _symbol = symbol_;
-        _decimals = decimals_;
-    }
-
-    function name() public view returns (string memory) {
-        return _name;
-    }
-
-    function symbol() public view returns (string memory) {
-        return _symbol;
-    }
-
-    function decimals() public view returns (uint8) {
-        return _decimals;
-    }
-}
-
-interface IDEXRouter {
-    function factory() external pure returns (address);
-
-    function WETH() external pure returns (address);
-
-    function addLiquidity(
-        address tokenA,
-        address tokenB,
-        uint256 amountADesired,
-        uint256 amountBDesired,
-        uint256 amountAMin,
-        uint256 amountBMin,
-        address to,
-        uint256 deadline
-    )
+    function allowance(address owner, address spender)
         external
-        returns (
-            uint256 amountA,
-            uint256 amountB,
-            uint256 liquidity
-        );
+        view
+        returns (uint256);
 
-    function addLiquidityETH(
-        address token,
-        uint256 amountTokenDesired,
-        uint256 amountTokenMin,
-        uint256 amountETHMin,
-        address to,
-        uint256 deadline
-    )
-        external
-        payable
-        returns (
-            uint256 amountToken,
-            uint256 amountETH,
-            uint256 liquidity
-        );
+    function transfer(address to, uint256 value) external returns (bool);
 
-    function swapExactTokensForTokensSupportingFeeOnTransferTokens(
-        uint256 amountIn,
-        uint256 amountOutMin,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external;
+    function approve(address spender, uint256 value) external returns (bool);
 
-    function swapExactETHForTokensSupportingFeeOnTransferTokens(
-        uint256 amountOutMin,
-        address[] calldata path,
+    function transferFrom(
+        address from,
         address to,
-        uint256 deadline
-    ) external payable;
+        uint256 value
+    ) external returns (bool);
 
-    function swapExactTokensForETHSupportingFeeOnTransferTokens(
-        uint256 amountIn,
-        uint256 amountOutMin,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external;
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint256 value
+    );
 }
 
-interface IDEXFactory {
-    function createPair(address tokenA, address tokenB)
-        external
-        returns (address pair);
+interface IPancakeSwapPair {
+		event Approval(address indexed owner, address indexed spender, uint value);
+		event Transfer(address indexed from, address indexed to, uint value);
+
+		function name() external pure returns (string memory);
+		function symbol() external pure returns (string memory);
+		function decimals() external pure returns (uint8);
+		function totalSupply() external view returns (uint);
+		function balanceOf(address owner) external view returns (uint);
+		function allowance(address owner, address spender) external view returns (uint);
+
+		function approve(address spender, uint value) external returns (bool);
+		function transfer(address to, uint value) external returns (bool);
+		function transferFrom(address from, address to, uint value) external returns (bool);
+
+		function DOMAIN_SEPARATOR() external view returns (bytes32);
+		function PERMIT_TYPEHASH() external pure returns (bytes32);
+		function nonces(address owner) external view returns (uint);
+
+		function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
+
+		event Mint(address indexed sender, uint amount0, uint amount1);
+		event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
+		event Swap(
+				address indexed sender,
+				uint amount0In,
+				uint amount1In,
+				uint amount0Out,
+				uint amount1Out,
+				address indexed to
+		);
+		event Sync(uint112 reserve0, uint112 reserve1);
+
+		function MINIMUM_LIQUIDITY() external pure returns (uint);
+		function factory() external view returns (address);
+		function token0() external view returns (address);
+		function token1() external view returns (address);
+		function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
+		function price0CumulativeLast() external view returns (uint);
+		function price1CumulativeLast() external view returns (uint);
+		function kLast() external view returns (uint);
+
+		function mint(address to) external returns (uint liquidity);
+		function burn(address to) external returns (uint amount0, uint amount1);
+		function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
+		function skim(address to) external;
+		function sync() external;
+
+		function initialize(address, address) external;
+}
+
+interface IPancakeSwapRouter{
+		function factory() external pure returns (address);
+		function WETH() external pure returns (address);
+
+		function addLiquidity(
+				address tokenA,
+				address tokenB,
+				uint amountADesired,
+				uint amountBDesired,
+				uint amountAMin,
+				uint amountBMin,
+				address to,
+				uint deadline
+		) external returns (uint amountA, uint amountB, uint liquidity);
+		function addLiquidityETH(
+				address token,
+				uint amountTokenDesired,
+				uint amountTokenMin,
+				uint amountETHMin,
+				address to,
+				uint deadline
+		) external payable returns (uint amountToken, uint amountETH, uint liquidity);
+		function removeLiquidity(
+				address tokenA,
+				address tokenB,
+				uint liquidity,
+				uint amountAMin,
+				uint amountBMin,
+				address to,
+				uint deadline
+		) external returns (uint amountA, uint amountB);
+		function removeLiquidityETH(
+				address token,
+				uint liquidity,
+				uint amountTokenMin,
+				uint amountETHMin,
+				address to,
+				uint deadline
+		) external returns (uint amountToken, uint amountETH);
+		function removeLiquidityWithPermit(
+				address tokenA,
+				address tokenB,
+				uint liquidity,
+				uint amountAMin,
+				uint amountBMin,
+				address to,
+				uint deadline,
+				bool approveMax, uint8 v, bytes32 r, bytes32 s
+		) external returns (uint amountA, uint amountB);
+		function removeLiquidityETHWithPermit(
+				address token,
+				uint liquidity,
+				uint amountTokenMin,
+				uint amountETHMin,
+				address to,
+				uint deadline,
+				bool approveMax, uint8 v, bytes32 r, bytes32 s
+		) external returns (uint amountToken, uint amountETH);
+		function swapExactTokensForTokens(
+				uint amountIn,
+				uint amountOutMin,
+				address[] calldata path,
+				address to,
+				uint deadline
+		) external returns (uint[] memory amounts);
+		function swapTokensForExactTokens(
+				uint amountOut,
+				uint amountInMax,
+				address[] calldata path,
+				address to,
+				uint deadline
+		) external returns (uint[] memory amounts);
+		function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline)
+				external
+				payable
+				returns (uint[] memory amounts);
+		function swapTokensForExactETH(uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline)
+				external
+				returns (uint[] memory amounts);
+		function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline)
+				external
+				returns (uint[] memory amounts);
+		function swapETHForExactTokens(uint amountOut, address[] calldata path, address to, uint deadline)
+				external
+				payable
+				returns (uint[] memory amounts);
+
+		function quote(uint amountA, uint reserveA, uint reserveB) external pure returns (uint amountB);
+		function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) external pure returns (uint amountOut);
+		function getAmountIn(uint amountOut, uint reserveIn, uint reserveOut) external pure returns (uint amountIn);
+		function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts);
+		function getAmountsIn(uint amountOut, address[] calldata path) external view returns (uint[] memory amounts);
+		function removeLiquidityETHSupportingFeeOnTransferTokens(
+			address token,
+			uint liquidity,
+			uint amountTokenMin,
+			uint amountETHMin,
+			address to,
+			uint deadline
+		) external returns (uint amountETH);
+		function removeLiquidityETHWithPermitSupportingFeeOnTransferTokens(
+			address token,
+			uint liquidity,
+			uint amountTokenMin,
+			uint amountETHMin,
+			address to,
+			uint deadline,
+			bool approveMax, uint8 v, bytes32 r, bytes32 s
+		) external returns (uint amountETH);
+	
+		function swapExactTokensForTokensSupportingFeeOnTransferTokens(
+			uint amountIn,
+			uint amountOutMin,
+			address[] calldata path,
+			address to,
+			uint deadline
+		) external;
+		function swapExactETHForTokensSupportingFeeOnTransferTokens(
+			uint amountOutMin,
+			address[] calldata path,
+			address to,
+			uint deadline
+		) external payable;
+		function swapExactTokensForETHSupportingFeeOnTransferTokens(
+			uint amountIn,
+			uint amountOutMin,
+			address[] calldata path,
+			address to,
+			uint deadline
+		) external;
+}
+
+interface IPancakeSwapFactory {
+		event PairCreated(address indexed token0, address indexed token1, address pair, uint);
+
+		function feeTo() external view returns (address);
+		function feeToSetter() external view returns (address);
+
+		function getPair(address tokenA, address tokenB) external view returns (address pair);
+		function allPairs(uint) external view returns (address pair);
+		function allPairsLength() external view returns (uint);
+
+		function createPair(address tokenA, address tokenB) external returns (address pair);
+
+		function setFeeTo(address) external;
+		function setFeeToSetter(address) external;
 }
 
 contract Ownable {
@@ -296,15 +366,46 @@ contract Ownable {
     }
 }
 
+abstract contract ERC20Detailed is IERC20 {
+    string private _name;
+    string private _symbol;
+    uint8 private _decimals;
+
+    constructor(
+        string memory name_,
+        string memory symbol_,
+        uint8 decimals_
+    ) {
+        _name = name_;
+        _symbol = symbol_;
+        _decimals = decimals_;
+    }
+
+    function name() public view returns (string memory) {
+        return _name;
+    }
+
+    function symbol() public view returns (string memory) {
+        return _symbol;
+    }
+
+    function decimals() public view returns (uint8) {
+        return _decimals;
+    }
+}
+
 contract Safuu is ERC20Detailed, Ownable {
-    
+
     using SafeMath for uint256;
     using SafeMathInt for int256;
 
     event LogRebase(uint256 indexed epoch, uint256 totalSupply);
 
-    InterfaceLP public pairContract;
-    
+    string public _name = "Safuu";
+    string public _symbol = "SAFUU";
+    uint8 public _decimals = 5;
+
+    IPancakeSwapPair public pairContract;
     mapping(address => bool) _isFeeExempt;
 
     modifier validRecipient(address to) {
@@ -312,19 +413,22 @@ contract Safuu is ERC20Detailed, Ownable {
         _;
     }
 
-    uint256 private constant DECIMALS = 2;
-    uint256 private constant MAX_UINT256 = ~uint256(0);
-    uint256 public constant RATE_DECIMALS = 7;
+    uint256 public constant DECIMALS = 5;
+    uint256 public constant MAX_UINT256 = ~uint256(0);
+    uint8 public constant RATE_DECIMALS = 7;
 
-    uint256 private constant INITIAL_FRAGMENTS_SUPPLY = 325 * 10**3 * 10**DECIMALS;
+    uint256 private constant INITIAL_FRAGMENTS_SUPPLY =
+        325 * 10**3 * 10**DECIMALS;
 
     uint256 public liquidityFee = 40;
     uint256 public treasuryFee = 25;
     uint256 public safuuInsuranceFundFee = 50;
     uint256 public sellFee = 20;
     uint256 public firePitFee = 25;
-    uint256 public totalFee = 
-        liquidityFee.add(treasuryFee).add(safuuInsuranceFundFee).add(firePitFee);
+    uint256 public totalFee =
+        liquidityFee.add(treasuryFee).add(safuuInsuranceFundFee).add(
+            firePitFee
+        );
     uint256 public feeDenominator = 1000;
 
     address DEAD = 0x000000000000000000000000000000000000dEaD;
@@ -334,15 +438,11 @@ contract Safuu is ERC20Detailed, Ownable {
     address public treasuryReceiver;
     address public safuuInsuranceFundReceiver;
     address public firePit;
-    address public presaleAddress;
     address public pairAddress;
-
-    IDEXRouter public router;
-    address public pair;
-
     bool public swapEnabled = true;
-    bool inSwap;
-    
+    IPancakeSwapRouter public router;
+    address public pair;
+    bool inSwap = false;
     modifier swapping() {
         inSwap = true;
         _;
@@ -355,44 +455,41 @@ contract Safuu is ERC20Detailed, Ownable {
     uint256 private constant MAX_SUPPLY = 325 * 10**7 * 10**DECIMALS;
 
     bool public _autoRebase;
+    bool public _autoAddLiquidity;
     uint256 public _initRebaseStartTime;
     uint256 public _lastRebasedTime;
     uint256 public _lastAddLiquidityTime;
     uint256 public _totalSupply;
     uint256 private _gonsPerFragment;
 
-
-    mapping(address => bool) private _excludeFromFee;
     mapping(address => uint256) private _gonBalances;
-
     mapping(address => mapping(address => uint256)) private _allowedFragments;
     mapping(address => bool) public blacklist;
 
-    constructor() ERC20Detailed("Safuu", "SAFUU", uint8(DECIMALS)) {
-        router = IDEXRouter(0x10ED43C718714eb63d5aA57B78B54704E256024E); //Sushi 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506 // Cake 0x10ED43C718714eb63d5aA57B78B54704E256024E
+    constructor() ERC20Detailed("Safuu", "SAFUU", uint8(DECIMALS)) Ownable() {
 
-        pair = IDEXFactory(router.factory()).createPair(
+        router = IPancakeSwapRouter(0x10ED43C718714eb63d5aA57B78B54704E256024E); 
+        pair = IPancakeSwapFactory(router.factory()).createPair(
             router.WETH(),
             address(this)
         );
-
-        pairAddress = pair;
+      
         autoLiquidityReceiver = 0x5562640B953b6c2f79a655E930aFa68b2a65C627;
-        treasuryReceiver = 0xa9c6d0cc785569b450393A69599E97fAED5D9dd9;
+        treasuryReceiver = 0xa9c6d0cc785569b450393A69599E97fAED5D9dd9; 
         safuuInsuranceFundReceiver = 0x082D0FbCA3D80b2d4A05E20bFc227523bE8EFEF3;
         firePit = 0xaA32C984AfDfa6B95e88B8aB7faBfa65De89b98C;
 
         _allowedFragments[address(this)][address(router)] = uint256(-1);
-        pairContract = InterfaceLP(pair);
+        pairAddress = pair;
+        pairContract = IPancakeSwapPair(pair);
 
         _totalSupply = INITIAL_FRAGMENTS_SUPPLY;
         _gonBalances[treasuryReceiver] = TOTAL_GONS;
         _gonsPerFragment = TOTAL_GONS.div(_totalSupply);
-
         _initRebaseStartTime = block.timestamp;
-        _lastAddLiquidityTime = block.timestamp;
-        _lastRebasedTime = _initRebaseStartTime;
-        _autoRebase = false;
+        _lastRebasedTime = block.timestamp;
+        _autoRebase = true;
+        _autoAddLiquidity = true;
         _isFeeExempt[treasuryReceiver] = true;
         _isFeeExempt[address(this)] = true;
 
@@ -400,82 +497,37 @@ contract Safuu is ERC20Detailed, Ownable {
         emit Transfer(address(0x0), treasuryReceiver, _totalSupply);
     }
 
-    function updateBlacklist(address _user, bool _flag) public onlyOwner{
-        blacklist[_user] = _flag;
-    }
-
-    function setPairAddress( address _pairAddress ) public onlyOwner {
-        pairAddress = _pairAddress;
-    }
-
-    function calculateSupplyDelta(uint256 epoch)
-        internal
-        view
-        returns (uint256)
-    {
+    function rebase() internal {
+        
+        if ( inSwap ) return;
         uint256 rebaseRate;
-        uint256 supplyDelta;
-        uint256 times = epoch / (15 minutes);
         uint256 deltaTimeFromInit = block.timestamp - _initRebaseStartTime;
-        if( deltaTimeFromInit < (365 days)){
-            rebaseRate = 2355;
-        } else if( deltaTimeFromInit >= (365 days)) {
-            rebaseRate = 211;
-        } else if ( deltaTimeFromInit >= ((15 * 365 days) / 10 )) {
-            rebaseRate = 14;
-        } else if( deltaTimeFromInit >= (7 * 365 days)) {
-            rebaseRate = 2;
-        } 
-
-        supplyDelta = _totalSupply
-            .mul(rebaseRate)
-            .div(10**RATE_DECIMALS)
-            .mul(times);
-        return supplyDelta;
-    }
-
-
-    function rebase()
-        internal 
-    {
-        require(!inSwap, "Try again");
-
         uint256 deltaTime = block.timestamp - _lastRebasedTime;
-        uint256 epoch = deltaTime - deltaTime % (15 minutes);
-        uint256 supplyDelta = calculateSupplyDelta(epoch);
+        uint256 times = deltaTime.div(15 minutes);
+        uint256 epoch = times.mul(15);
 
-        if (supplyDelta == 0) {
-            emit LogRebase(epoch, _totalSupply);
+        if (deltaTimeFromInit < (365 days)) {
+            rebaseRate = 2355;
+        } else if (deltaTimeFromInit >= (365 days)) {
+            rebaseRate = 211;
+        } else if (deltaTimeFromInit >= ((15 * 365 days) / 10)) {
+            rebaseRate = 14;
+        } else if (deltaTimeFromInit >= (7 * 365 days)) {
+            rebaseRate = 2;
         }
 
-        if (supplyDelta < 0) {
-            _totalSupply = _totalSupply.sub(uint256(-supplyDelta));
-        } else {
-            _totalSupply = _totalSupply.add(uint256(supplyDelta));
-        }
-
-        if (_totalSupply > MAX_SUPPLY) {
-            _totalSupply = MAX_SUPPLY;
+        for (uint256 i = 0; i < times; i++) {
+            _totalSupply = _totalSupply
+                .mul((10**RATE_DECIMALS).add(rebaseRate))
+                .div(10**RATE_DECIMALS);
         }
 
         _gonsPerFragment = TOTAL_GONS.div(_totalSupply);
-        _lastRebasedTime = _lastRebasedTime + epoch;
-        pairContract.sync();
-        
-        emit LogRebase(epoch, _totalSupply);
-    }
+        _lastRebasedTime = _lastRebasedTime.add(times.mul(15 minutes));
 
-    function setAutoRebase(bool _flag) external onlyOwner {
-        if(_flag){
-            _autoRebase = _flag;
-            _lastRebasedTime = block.timestamp;
-        } else {
-            _autoRebase = _flag;
-        }
-    } 
-    
-    function totalSupply() external view override returns (uint256) {
-        return _totalSupply;
+        pairContract.sync();
+
+        emit LogRebase(epoch, _totalSupply);
     }
 
     function transfer(address to, uint256 value)
@@ -488,22 +540,19 @@ contract Safuu is ERC20Detailed, Ownable {
         return true;
     }
 
-    function setLP(address _address) external onlyOwner {
-        pairContract = InterfaceLP(_address);
-        _isFeeExempt[_address];
-    }
-
-    function allowance(address owner_, address spender)
-        external
-        view
-        override
-        returns (uint256)
-    {
-        return _allowedFragments[owner_][spender];
-    }
-
-    function balanceOf(address who) external view override returns (uint256) {
-        return _gonBalances[who].div(_gonsPerFragment);
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) external override validRecipient(to) returns (bool) {
+        
+        if (_allowedFragments[from][msg.sender] != uint256(-1)) {
+            _allowedFragments[from][msg.sender] = _allowedFragments[from][
+                msg.sender
+            ].sub(value, "Insufficient Allowance");
+        }
+        _transferFrom(from, to, value);
+        return true;
     }
 
     function _basicTransfer(
@@ -523,30 +572,32 @@ contract Safuu is ERC20Detailed, Ownable {
         uint256 amount
     ) internal returns (bool) {
 
-        require(!blacklist[sender] && !blacklist[recipient], 'in_blacklist');
+        require(!blacklist[sender] && !blacklist[recipient], "in_blacklist");
 
         if (inSwap) {
             return _basicTransfer(sender, recipient, amount);
+        }
+        if (shouldRebase()) {
+           rebase();
         }
 
         if (shouldAddLiquidity()) {
             addLiquidity();
         }
 
-        if(shouldRebase()) {
-            rebase();
+        if (shouldSwapBack()) {
+            swapBack();
         }
 
         uint256 gonAmount = amount.mul(_gonsPerFragment);
         _gonBalances[sender] = _gonBalances[sender].sub(gonAmount);
-
         uint256 gonAmountReceived = shouldTakeFee(sender, recipient)
             ? takeFee(sender, recipient, gonAmount)
             : gonAmount;
-
         _gonBalances[recipient] = _gonBalances[recipient].add(
             gonAmountReceived
         );
+
 
         emit Transfer(
             sender,
@@ -556,36 +607,57 @@ contract Safuu is ERC20Detailed, Ownable {
         return true;
     }
 
-    function transferFrom(
-        address from,
-        address to,
-        uint256 value
-    ) external override validRecipient(to) returns (bool) {
-        if (_allowedFragments[from][msg.sender] != uint256(-1)) {
-            _allowedFragments[from][msg.sender] = _allowedFragments[from][
-                msg.sender
-            ].sub(value, "Insufficient Allowance");
+    function takeFee(
+        address sender,
+        address recipient,
+        uint256 gonAmount
+    ) internal  returns (uint256) {
+        uint256 _totalFee = totalFee;
+        uint256 _treasuryFee = treasuryFee;
+
+        if (recipient == pair) {
+            _totalFee = totalFee.add(sellFee);
+            _treasuryFee = treasuryFee.add(sellFee);
         }
-        _transferFrom(from, to, value);
-        return true;
+
+        uint256 feeAmount = gonAmount.div(feeDenominator).mul(_totalFee);
+       
+        _gonBalances[firePit] = _gonBalances[firePit].add(
+            gonAmount.div(feeDenominator).mul(firePitFee)
+        );
+        _gonBalances[address(this)] = _gonBalances[address(this)].add(
+            gonAmount.div(feeDenominator).mul(_treasuryFee.add(safuuInsuranceFundFee))
+        );
+        _gonBalances[autoLiquidityReceiver] = _gonBalances[autoLiquidityReceiver].add(
+            gonAmount.div(feeDenominator).mul(liquidityFee)
+        );
+        
+        emit Transfer(sender, address(this), feeAmount.div(_gonsPerFragment));
+        return gonAmount.sub(feeAmount);
     }
 
     function addLiquidity() internal swapping {
-
-        uint256 contractTokenBalance = _gonBalances[address(this)].div(
+        uint256 autoLiquidityAmount = _gonBalances[autoLiquidityReceiver].div(
             _gonsPerFragment
         );
-        uint256 amountToLiquify = contractTokenBalance
-            .div(2);
-        uint256 amountToSwap = contractTokenBalance.sub(amountToLiquify);
+        _gonBalances[address(this)] = _gonBalances[address(this)].add(
+            _gonBalances[autoLiquidityReceiver]
+        );
+        _gonBalances[autoLiquidityReceiver] = 0;
+        uint256 amountToLiquify = autoLiquidityAmount.div(2);
+        uint256 amountToSwap = autoLiquidityAmount.sub(amountToLiquify);
 
+        if( amountToSwap == 0 ) {
+            return;
+        }
         address[] memory path = new address[](2);
         path[0] = address(this);
         path[1] = router.WETH();
 
         uint256 balanceBefore = address(this).balance;
 
-        router.swapExactTokensForETHSupportingFeeOnTransferTokens (
+
+        router.swapExactTokensForETHSupportingFeeOnTransferTokens(
             amountToSwap,
             0,
             path,
@@ -595,7 +667,7 @@ contract Safuu is ERC20Detailed, Ownable {
 
         uint256 amountETHLiquidity = address(this).balance.sub(balanceBefore);
 
-        if (amountToLiquify > 0) {
+        if (amountToLiquify > 0&&amountETHLiquidity > 0) {
             router.addLiquidityETH{value: amountETHLiquidity}(
                 address(this),
                 amountToLiquify,
@@ -605,80 +677,160 @@ contract Safuu is ERC20Detailed, Ownable {
                 block.timestamp
             );
         }
+        _lastAddLiquidityTime = block.timestamp;
     }
 
-    function takeFee(address sender, address recipient, uint256 gonAmount)
-        internal
-        swapping
-        returns (uint256)
-    {
-        uint256 _totalFee = totalFee;
-        uint256 _treasuryFee = treasuryFee;
-        if(recipient == pair){
-            _totalFee = _totalFee.add(sellFee);
-            _treasuryFee = treasuryFee.add(sellFee);
-        } 
+    function swapBack() internal swapping {
 
-        uint256 feeAmount = gonAmount.mul(_totalFee).div(feeDenominator);
-        
-        {   
-            uint256 firePitFeeAmount = gonAmount.mul(firePitFee).div(feeDenominator);
-            _gonBalances[firePit] = _gonBalances[firePit].add(
-                firePitFeeAmount
-            );
+        uint256 amountToSwap = _gonBalances[address(this)].div(_gonsPerFragment);
 
-            uint256 liquidityFeeAmount = gonAmount.mul(liquidityFee).div(feeDenominator);
-            _gonBalances[address(this)] = _gonBalances[address(this)].add(
-                liquidityFeeAmount
-            );
+        if( amountToSwap == 0) {
+            return;
         }
 
-        
-        uint256 amountToSwap = gonAmount
-            .mul(_treasuryFee.add(safuuInsuranceFundFee))
-            .div(feeDenominator)
-            .div(_gonsPerFragment);
-
+        uint256 balanceBefore = address(this).balance;
         address[] memory path = new address[](2);
         path[0] = address(this);
         path[1] = router.WETH();
 
-        uint256 balanceBefore = address(this).balance;
-
-        router.swapExactTokensForETHSupportingFeeOnTransferTokens (
+        
+        router.swapExactTokensForETHSupportingFeeOnTransferTokens(
             amountToSwap,
             0,
             path,
             address(this),
             block.timestamp
         );
-        
 
-        uint256 amountETHToTreasuryAndSIF = address(this).balance.sub(balanceBefore);
-        
-        {
-            
-            uint256 amountETHToTreasury = amountETHToTreasuryAndSIF
-                .mul(_treasuryFee)
-                .div(_treasuryFee.add(safuuInsuranceFundFee));
-            uint256 amountETHToSIF = amountETHToTreasuryAndSIF
-                .mul(safuuInsuranceFundFee)
-                .div(_treasuryFee.add(safuuInsuranceFundFee));
+        uint256 amountETHToTreasuryAndSIF = address(this).balance.sub(
+            balanceBefore
+        );
 
-            (bool success, ) = payable(treasuryReceiver).call{
-                value: amountETHToTreasury,
-                gas: 30000
-            }("");
-
-            (success, ) = payable(safuuInsuranceFundReceiver).call{
-                value: amountETHToSIF,
-                gas: 30000
-            }("");
-        }
-        emit Transfer(sender, address(this), feeAmount.div(_gonsPerFragment));
-        return gonAmount.sub(feeAmount);
+        (bool success, ) = payable(treasuryReceiver).call{
+            value: amountETHToTreasuryAndSIF.mul(treasuryFee).div(
+                treasuryFee.add(safuuInsuranceFundFee)
+            ),
+            gas: 30000
+        }("");
+        (success, ) = payable(safuuInsuranceFundReceiver).call{
+            value: amountETHToTreasuryAndSIF.mul(safuuInsuranceFundFee).div(
+                treasuryFee.add(safuuInsuranceFundFee)
+            ),
+            gas: 30000
+        }("");
     }
-    
+
+    function withdrawAllToTreasury() external swapping onlyOwner {
+
+        uint256 amountToSwap = _gonBalances[address(this)].div(_gonsPerFragment);
+        require( amountToSwap > 0,"There is no Safuu token deposited in token contract");
+        address[] memory path = new address[](2);
+        path[0] = address(this);
+        path[1] = router.WETH();
+        router.swapExactTokensForETHSupportingFeeOnTransferTokens(
+            amountToSwap,
+            0,
+            path,
+            treasuryReceiver,
+            block.timestamp
+        );
+    }
+
+    function shouldTakeFee(address from, address to)
+        internal
+        view
+        returns (bool)
+    {
+        return 
+            (pair == from || pair == to) &&
+            !_isFeeExempt[from];
+    }
+
+    function shouldRebase() internal view returns (bool) {
+        return
+            _autoRebase &&
+            (_totalSupply < MAX_SUPPLY) &&
+            msg.sender != pair  &&
+            !inSwap &&
+            block.timestamp >= (_lastRebasedTime + 15 minutes);
+    }
+
+    function shouldAddLiquidity() internal view returns (bool) {
+        return
+            _autoAddLiquidity && 
+            !inSwap && 
+            msg.sender != pair &&
+            block.timestamp >= (_lastAddLiquidityTime + 2 days);
+    }
+
+    function shouldSwapBack() internal view returns (bool) {
+        return 
+            !inSwap &&
+            msg.sender != pair  ; 
+    }
+
+    function setAutoRebase(bool _flag) external onlyOwner {
+        if (_flag) {
+            _autoRebase = _flag;
+            _lastRebasedTime = block.timestamp;
+        } else {
+            _autoRebase = _flag;
+        }
+    }
+
+    function setAutoAddLiquidity(bool _flag) external onlyOwner {
+        if(_flag) {
+            _autoAddLiquidity = _flag;
+            _lastAddLiquidityTime = block.timestamp;
+        } else {
+            _autoAddLiquidity = _flag;
+        }
+    }
+
+    function allowance(address owner_, address spender)
+        external
+        view
+        override
+        returns (uint256)
+    {
+        return _allowedFragments[owner_][spender];
+    }
+
+    function decreaseAllowance(address spender, uint256 subtractedValue)
+        external
+        returns (bool)
+    {
+        uint256 oldValue = _allowedFragments[msg.sender][spender];
+        if (subtractedValue >= oldValue) {
+            _allowedFragments[msg.sender][spender] = 0;
+        } else {
+            _allowedFragments[msg.sender][spender] = oldValue.sub(
+                subtractedValue
+            );
+        }
+        emit Approval(
+            msg.sender,
+            spender,
+            _allowedFragments[msg.sender][spender]
+        );
+        return true;
+    }
+
+    function increaseAllowance(address spender, uint256 addedValue)
+        external
+        returns (bool)
+    {
+        _allowedFragments[msg.sender][spender] = _allowedFragments[msg.sender][
+            spender
+        ].add(addedValue);
+        emit Approval(
+            msg.sender,
+            spender,
+            _allowedFragments[msg.sender][spender]
+        );
+        return true;
+    }
+
     function approve(address spender, uint256 value)
         external
         override
@@ -693,25 +845,6 @@ contract Safuu is ERC20Detailed, Ownable {
         return _isFeeExempt[_addr];
     }
 
-
-    function setFeeExempt(address _addr) external onlyOwner {
-        _isFeeExempt[_addr] = true;
-    }
-
-    function shouldTakeFee(address from, address to) internal view returns (bool) {
-        return (pair == from || pair == to) && (!_isFeeExempt[from]);
-    }
-
-    function shouldRebase() internal view returns (bool) {
-        return
-            _autoRebase && (_totalSupply < MAX_SUPPLY) && (block.timestamp >= _lastRebasedTime + 15 minutes);
-    }
-
-    function shouldAddLiquidity() internal view returns (bool) {
-        return
-            (block.timestamp >= (_lastAddLiquidityTime + 2 days));
-    }
-
     function getCirculatingSupply() public view returns (uint256) {
         return
             (TOTAL_GONS.sub(_gonBalances[DEAD]).sub(_gonBalances[ZERO])).div(
@@ -724,7 +857,7 @@ contract Safuu is ERC20Detailed, Ownable {
     }
 
     function manualSync() external {
-        InterfaceLP(pair).sync();
+        IPancakeSwapPair(pair).sync();
     }
 
     function setFeeReceivers(
@@ -739,13 +872,6 @@ contract Safuu is ERC20Detailed, Ownable {
         firePit = _firePit;
     }
 
-
-    function transferToAddressETH(address payable recipient, uint256 amount)
-        private
-    {
-        recipient.transfer(amount);
-    }
-
     function getLiquidityBacking(uint256 accuracy)
         public
         view
@@ -756,13 +882,36 @@ contract Safuu is ERC20Detailed, Ownable {
             accuracy.mul(liquidityBalance.mul(2)).div(getCirculatingSupply());
     }
 
-    function whitelistPinkSale(address _presaleAddress) external onlyOwner {
-        presaleAddress = _presaleAddress;
-        _isFeeExempt[_presaleAddress] = true;
+    function setWhitelist(address _addr) external onlyOwner {
+        _isFeeExempt[_addr] = true;
+    }
+
+    function setBotBlacklist(address _botAddress, bool _flag) external onlyOwner {
+        require(isContract(_botAddress), "only contract address, not allowed exteranlly owned account");
+        blacklist[_botAddress] = _flag;    
+    }
+    
+    function setPairAddress(address _pairAddress) public onlyOwner {
+        pairAddress = _pairAddress;
+    }
+
+    function setLP(address _address) external onlyOwner {
+        pairContract = IPancakeSwapPair(_address);
+    }
+    
+    function totalSupply() external view override returns (uint256) {
+        return _totalSupply;
+    }
+   
+    function balanceOf(address who) external view override returns (uint256) {
+        return _gonBalances[who].div(_gonsPerFragment);
+    }
+
+    function isContract(address addr) internal view returns (bool) {
+        uint size;
+        assembly { size := extcodesize(addr) }
+        return size > 0;
     }
 
     receive() external payable {}
 }
-
-
-
