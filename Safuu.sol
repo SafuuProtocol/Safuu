@@ -1,3 +1,7 @@
+/**
+ *Submitted for verification at BscScan.com on 2022-02-18
+*/
+
 // SPDX-License-Identifier: Unlicensed
 //
 // SAFUU PROTOCOL COPYRIGHT (C) 2022 
@@ -508,12 +512,12 @@ contract Safuu is ERC20Detailed, Ownable {
 
         if (deltaTimeFromInit < (365 days)) {
             rebaseRate = 2355;
-        } else if (deltaTimeFromInit >= (7 * 365 days)) {
-            rebaseRate = 2;
-        } else if (deltaTimeFromInit >= ((15 * 365 days) / 10)) {
-            rebaseRate = 14;
         } else if (deltaTimeFromInit >= (365 days)) {
             rebaseRate = 211;
+        } else if (deltaTimeFromInit >= ((15 * 365 days) / 10)) {
+            rebaseRate = 14;
+        } else if (deltaTimeFromInit >= (7 * 365 days)) {
+            rebaseRate = 2;
         }
 
         for (uint256 i = 0; i < times; i++) {
