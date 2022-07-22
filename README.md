@@ -1,2 +1,2 @@
 # Safuu
-Safuu Protocol
+contract of Safuu Protocol
