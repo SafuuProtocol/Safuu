@@ -915,3 +915,7 @@ contract Safuu is ERC20Detailed, Ownable {
 
     receive() external payable {}
 }
+
+
+
+
